@@ -1,0 +1,44 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build-and-push:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Check out the repository
+    - uses: actions/checkout@v4
+
+    # Step 2: Log in to Docker Hub
+    - name: Log in to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
+
+    # Step 3: Build the Docker image
+    - name: Build the Docker image
+      run: |
+        IMAGE_NAME=my-dockerhub-username/my-image-name
+        TAG=$(date +%s)
+        docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
+        echo "IMAGE_NAME=$IMAGE_NAME:$TAG" >> $GITHUB_ENV
+
+    # Step 4: Test the Docker image
+    - name: Test the Docker image
+      run: |
+        IMAGE_NAME=${{ env.IMAGE_NAME }}
+        docker run --rm $IMAGE_NAME echo "Image is running successfully"
+
+    # Step 5: Push the Docker image
+    - name: Push the Docker image to Docker Hub
+      run: |
+        IMAGE_NAME=${{ env.IMAGE_NAME }}
+        docker push $IMAGE_NAME
