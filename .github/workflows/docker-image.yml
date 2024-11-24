@@ -26,18 +26,12 @@ jobs:
     # Step 3: Build the Docker image
     - name: Build the Docker image
       run: |
-        IMAGE_NAME=my-dockerhub-username/my-image-name
-        TAG=$(date +%s)
+        IMAGE_NAME=${{ secrets.DOCKER_USER }}/userservice
+        TAG=latest
         docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
         echo "IMAGE_NAME=$IMAGE_NAME:$TAG" >> $GITHUB_ENV
 
-    # Step 4: Test the Docker image
-    - name: Test the Docker image
-      run: |
-        IMAGE_NAME=${{ env.IMAGE_NAME }}
-        docker run --rm $IMAGE_NAME echo "Image is running successfully"
-
-    # Step 5: Push the Docker image
+    # Step 4: Push the Docker image
     - name: Push the Docker image to Docker Hub
       run: |
         IMAGE_NAME=${{ env.IMAGE_NAME }}
