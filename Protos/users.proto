@@ -1,0 +1,21 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+option csharp_namespace = "UserService";
+
+service GrpcUser{
+  //this is the procedure call
+  rpc GetAllUsers(GetAllRequest) returns (UserResponse);
+}
+
+message GetAllRequest{}
+
+message GrpcUserModel{
+  int32 userId = 1; //this is not the Id from the user, it is a position number
+  string name = 2;
+  google.protobuf.Timestamp created = 3;
+}
+
+//this is what we pass back
+message UserResponse{
+  repeated GrpcUserModel user = 1;
+}
