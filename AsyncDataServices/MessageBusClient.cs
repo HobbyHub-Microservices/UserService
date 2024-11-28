@@ -14,8 +14,11 @@ public class MessageBusClient : IMessageBusClient
     public MessageBusClient(IConfiguration config)
     {
         _config = config;
-        var factory = new ConnectionFactory(){ HostName = _config["RabbitMQHost"], 
-            Port = int.Parse(_config["RabbitMQPort"] ?? string.Empty)}; //this needs to be the same as the appsettings.json file settings
+        var factory = new ConnectionFactory(){ 
+            HostName = _config["RabbitMQHost"], 
+            Port = int.Parse(_config["RabbitMQPort"] ?? string.Empty),
+            ClientProvidedName = "UserService"
+        }; //this needs to be the same as the appsettings.json file settings
         try
         {
             _connection = factory.CreateConnection();
