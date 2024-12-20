@@ -3,6 +3,7 @@ using UserService.Data;
 
 
 using Microsoft.AspNetCore.Mvc;
+using Prometheus;
 using UserService.AsyncDataServices;
 using UserService.SyncDataServices.Grpc;
 using UserService.SyncDataServices.Http;
@@ -55,10 +56,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseRouting();
 
-// *** Enable routing for Controllers ***
-app.MapControllers();
+// Map the /metrics endpoint directly
+app.MapMetrics(); // This maps the Prometheus metrics endpoint
+
+// Map controllers or other routes directly
+app.MapControllers(); // If you have any API controllers
+
+// Optional: Add other middleware or configurations
+app.UseHttpMetrics(); // Enables HTTP metrics
 
 app.MapGet("/protos/users.proto", async context =>
 {

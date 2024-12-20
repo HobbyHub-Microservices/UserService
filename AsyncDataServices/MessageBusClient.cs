@@ -24,7 +24,7 @@ public class MessageBusClient : IMessageBusClient
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
             
-            _channel.ExchangeDeclare(exchange: "trigger", type: ExchangeType.Fanout);
+            _channel.ExchangeDeclare(exchange: "user.topic", type: ExchangeType.Topic, durable: true);
 
             _connection.ConnectionShutdown += RabbitMq_ConnectionShutDown;
             Console.WriteLine("--> Connected to RabbitMQ");
@@ -52,7 +52,11 @@ public class MessageBusClient : IMessageBusClient
     private void SendMessage(string message)
     {
         var body = Encoding.UTF8.GetBytes(message);
-        _channel.BasicPublish(exchange: "trigger", routingKey: "", basicProperties: null, body: body);
+        _channel.BasicPublish(
+            exchange: "user.topic",
+            routingKey: "user.add",
+            basicProperties: null,
+            body: Encoding.UTF8.GetBytes(message));
         Console.WriteLine($"--> Sent message to RabbitMQ: {message}");
     }
 
