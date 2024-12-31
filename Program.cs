@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using UserService.Data;
-
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using Microsoft.AspNetCore.Mvc;
 using Prometheus;
@@ -17,6 +17,27 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.Authority = "http://hobbyhub.com:8080/realms/HobbyHub/"; // Keycloak realm URL
+    options.Audience = "frontend-app"; // Replace with your Keycloak client ID
+    options.RequireHttpsMetadata = false; // Disable in development if using HTTP
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidIssuer = "http://hobbyhub.com:8080/realms/HobbyHub/",
+        ValidAudience = "frontend-app"
+    };
+});
+
+builder.Services.AddAuthorization();
 
 
 if (builder.Environment.IsProduction())
@@ -60,6 +81,9 @@ app.UseRouting();
 
 // Map the /metrics endpoint directly
 app.MapMetrics(); // This maps the Prometheus metrics endpoint
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map controllers or other routes directly
 app.MapControllers(); // If you have any API controllers

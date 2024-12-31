@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using UserService.AsyncDataServices;
@@ -9,6 +10,7 @@ using UserService.SyncDataServices.Http;
 
 namespace UserService.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController  : ControllerBase
@@ -29,6 +31,16 @@ namespace UserService.Controllers
             _mapper = mapper;
             _hobbyDataClient = hobbyDataClient;
             _messageBusClient = messageBusClient;
+        }
+        
+        [HttpGet("profile")]
+        public IActionResult GetProfile()
+        {
+            return Ok(new
+            {
+                UserName = User.Identity?.Name,
+                Claims = User.Claims.Select(c => new { c.Type, c.Value })
+            });
         }
         
         [HttpGet]
@@ -63,14 +75,15 @@ namespace UserService.Controllers
             var UserReadDTO = _mapper.Map<UserReadDTO>(userModel);
             
             //Send Sync Message
-            try
-            {
-                await _hobbyDataClient.SendUsersToHobby(UserReadDTO);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not send user to HobbyService: {ex.Message}");
-            }
+            // try
+            // {
+            //     await _hobbyDataClient.SendUsersToHobby(UserReadDTO);
+            // }
+            // catch (Exception ex)
+            // {
+            //     Console.WriteLine($"--> Could not send user to HobbyService: {ex.Message}");
+            // }
+
             
             //Send Async Message
             try
@@ -85,6 +98,13 @@ namespace UserService.Controllers
             }
 
             return CreatedAtRoute(nameof(GetUserById), new {Id = UserReadDTO.Id}, UserReadDTO);
+        }
+        
+        [HttpGet("public")]
+        [AllowAnonymous]
+        public IActionResult GetPublicInfo()
+        {
+            return Ok(new { Message = "This is a public endpoint!" });
         }
     }
 }
