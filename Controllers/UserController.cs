@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+using System.Text.Json;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -19,18 +21,22 @@ namespace UserService.Controllers
         private readonly IMapper _mapper;
         private readonly IHobbyDataClient _hobbyDataClient;
         private readonly IMessageBusClient _messageBusClient;
+        private readonly IConfiguration _configuration;
 
         public UsersController(
             IUserRepo repository, 
             IMapper mapper,
             IHobbyDataClient hobbyDataClient,
-            IMessageBusClient messageBusClient)
+            IMessageBusClient messageBusClient, 
+            IConfiguration configuration
+            )
         {
             //This is all registered in the Program.cs inside a builder.services...
             _repository = repository;
             _mapper = mapper;
             _hobbyDataClient = hobbyDataClient;
             _messageBusClient = messageBusClient;
+            _configuration = configuration;
         }
         
         [HttpGet("profile")]
@@ -42,7 +48,134 @@ namespace UserService.Controllers
                 Claims = User.Claims.Select(c => new { c.Type, c.Value })
             });
         }
+        [AllowAnonymous]
+        [HttpPut("{id}")]
+        public ActionResult UpdateUser(int id, UserUpdateDTO userUpdateDTO)
+        {
+            var userFromRepo = _repository.GetUserById(id);
+
+            if (userFromRepo == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            // Map the updated fields
+            _mapper.Map(userUpdateDTO, userFromRepo);
+
+            // Save changes
+            _repository.UpdateUser(userFromRepo); // If your repository has an explicit update method
+            _repository.SaveChanges();
+
+            return NoContent(); // HTTP 204 indicates a successful update with no content to return
+        }
+
+        [AllowAnonymous]
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteUser(int id)
+        {
+            var clientId = _configuration["Keycloak:ClientId"];
+            var clientSecret = _configuration["Keycloak:ClientSecret"];
+            var authority = _configuration["Keycloak:Authority"];
+
+            var userFromRepo = _repository.GetUserById(id);
+
+            Console.WriteLine($"Keycloak id = {userFromRepo.KeycloakId}");
+            if (userFromRepo == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            // Delete user from Keycloak
+            try
+            {
+                var httpClient = new HttpClient();
+
+
+                var content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    { "grant_type", "password" },
+                    { "client_id", "admin-cli" },
+                    { "username", "admin" },
+                    { "password", "admin" },
+                    { "client_secret", "jLGWqa9rna565mxfkDNd3T5dGcUPKlU8" }
+                });
+
+
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri("http://hobbyhub.com:8080/realms/master/protocol/openid-connect/token"),
+                    Content = content
+                };
+                
+                // content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+                
+                var response = await httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine("Token Response: " + responseContent);
+                }
+                else
+                {
+                    return StatusCode(500);
+                }
+
+                var tokenContent = await response.Content.ReadAsStringAsync();
+                var token = JsonSerializer.Deserialize<JsonElement>(tokenContent)
+                    .GetProperty("access_token").GetString();
+
+                Console.WriteLine($"Access Token: {token}");
+                // Create the DELETE request
+                var client = new HttpClient();
+                
+                var httprequest = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Delete,
+                    RequestUri =
+                        new Uri(
+                            "http://hobbyhub.com:8080/admin/realms/HobbyHub/users/" + userFromRepo.KeycloakId),
+                };
+
+                // Set Authorization header
+                httprequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                // httprequest.Headers.Add("Authorization", "Bearer " + clientId);
+
+                try
+                {
+                    // Send the request
+                    var message = await client.SendAsync(httprequest);
+
+                    if (message.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine("User deleted successfully.");
+                        _repository.DeleteUser(userFromRepo);
+                        _repository.SaveChanges();
+
+                        return Ok();
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Error: {message.StatusCode}, {await message.Content.ReadAsStringAsync()}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception: {ex.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+            }
+
+            // Delete user from your database
+            return NoContent();
+        }
+    
         
+        [AllowAnonymous]
         [HttpGet]
         public ActionResult<IEnumerable<UserReadDTO>> GetUsers()
         {
@@ -53,6 +186,7 @@ namespace UserService.Controllers
             return Ok(_mapper.Map<IEnumerable<UserReadDTO>>(userItem));
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}", Name = "GetUserById")]
         public ActionResult<UserReadDTO> GetUserById(int id)
         {
@@ -65,10 +199,12 @@ namespace UserService.Controllers
             return NotFound();
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<UserReadDTO>> CreateUser(UserCreateDTO userCreateDTO)
         {
             var userModel = _mapper.Map<User>(userCreateDTO);
+            userModel.Created = DateTime.UtcNow;
             _repository.CreateUser(userModel);
             _repository.SaveChanges();
 

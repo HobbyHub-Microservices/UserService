@@ -30,12 +30,12 @@ namespace UserService.Data
 
             if(!context.Users.Any())
             {
-                Console.WriteLine("---> Seeding data ...");
-                context.Users.AddRange(
-                    new User(){Name="Bob", Created = DateTime.Now}
-                );
-
-                context.SaveChanges();
+                // Console.WriteLine("---> Seeding data ...");
+                // context.Users.AddRange(
+                //     new User(){Name="Bob", KeycloakId = 0, Created = DateTime.Now}
+                // );
+                //
+                // context.SaveChanges();
             }
             else
             {

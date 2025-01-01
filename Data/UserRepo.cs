@@ -21,6 +21,21 @@ namespace UserService.Data
             _context.Users.Add(user);
         }
 
+        public void UpdateUser(User user)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteUser(User user)
+        {
+            _context.Users.Remove(GetUserById(user.Id));
+        }
+
+        public Task DeleteUserFromKeycloakAsync(User user)
+        {
+            throw new NotImplementedException();
+        }
+
         public IEnumerable<User> GetAllUsers()
         {
             return _context.Users.ToList();

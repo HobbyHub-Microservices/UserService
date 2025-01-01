@@ -1,7 +1,10 @@
 ﻿using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using UserService.Data;
 using UserService.DTOs;
+using UserService.Models;
 
 namespace UserService.AsyncDataServices;
 
@@ -10,9 +13,12 @@ public class MessageBusClient : IMessageBusClient
     private readonly IConfiguration _config;
     private readonly IConnection _connection;
     private readonly IModel _channel;
+    private string _queueName;
+    private readonly IServiceProvider _services;
 
-    public MessageBusClient(IConfiguration config)
+    public MessageBusClient(IConfiguration config, IServiceProvider services)
     {
+        _services = services;
         _config = config;
         var factory = new ConnectionFactory(){ 
             HostName = _config["RabbitMQHost"], 
@@ -23,9 +29,11 @@ public class MessageBusClient : IMessageBusClient
         {
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
-            
             _channel.ExchangeDeclare(exchange: "user.topic", type: ExchangeType.Topic, durable: false);
-
+            _channel.ExchangeDeclare(exchange: "amq.topic", type: ExchangeType.Topic, durable: true);
+           
+            
+            
             _connection.ConnectionShutdown += RabbitMq_ConnectionShutDown;
             Console.WriteLine("--> Connected to RabbitMQ");
         }
@@ -59,6 +67,87 @@ public class MessageBusClient : IMessageBusClient
             body: Encoding.UTF8.GetBytes(message));
         Console.WriteLine($"--> Sent message to RabbitMQ: {message}");
     }
+    
+    public void StartListening(string routingKey)
+    {
+       
+        // Declare a queue and bind it to the topic exchange
+        _queueName = _channel.QueueDeclare().QueueName;
+        _channel.QueueBind(queue: _queueName, exchange: "amq.topic", routingKey: routingKey);
+        Console.WriteLine($"--> Listening for RabbitMQ events on {routingKey}");
+        
+        var consumer = new EventingBasicConsumer(_channel);
+
+        consumer.Received += (model, ea) =>
+        {
+            var body = ea.Body.ToArray();
+            var message = Encoding.UTF8.GetString(body);
+            Console.WriteLine($"--> Received message: {message}");
+
+            // Process the message
+            HandleMessage(ea.RoutingKey, message);
+        };
+
+        _channel.BasicConsume(queue: _queueName, autoAck: true, consumer: consumer);
+        Console.WriteLine($"--> Listening for messages with routing key: {routingKey}");
+    }
+
+    private void HandleMessage(string routingKey, string message)
+    {
+        // Implement your message handling logic here
+        try
+        {
+            // Deserialize the message
+            var eventMessage = JsonSerializer.Deserialize<EventMessage>(message);
+
+            if (eventMessage == null)
+            {
+                Console.WriteLine("Unable to deserialize message");
+                return;
+            }
+            Console.WriteLine($"--> Received message: {message}");
+
+            // Check if the type matches REGISTER
+
+                if (eventMessage.Type == "REGISTER")
+                {
+                    Console.WriteLine($"New User: {eventMessage.Details.Username}");
+                    Console.WriteLine($"New EMAIL: {eventMessage.Details.Email}");
+                    Console.WriteLine($"New ID: {eventMessage.UserId}");
+                    User user = new User
+                    {
+                        KeycloakId = eventMessage.UserId,
+                        Created = DateTime.UtcNow,
+                        Name = eventMessage.Details.Username
+                    };
+                    Task.Run(() =>
+                    {
+                        using (var scope = _services.CreateScope())
+                        {
+                            var processor = scope.ServiceProvider.GetRequiredService<IUserRepo>();
+                            processor.CreateUser(user);
+                            processor.SaveChanges();
+                        }
+                    });
+                }
+
+                if (eventMessage.Type == "UPDATE_PROFILE")
+                {
+                    
+                    Console.WriteLine($"Received PROFILE event for user: {eventMessage.Details.Context}");
+                }
+                else
+                {
+                    Console.WriteLine($"Received event of type {eventMessage}");
+                }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing message: {ex.Message}");
+        }
+    }
+    
 
     private void Dispose()
     {

@@ -5,9 +5,10 @@ namespace UserService.DTOs
     public class UserCreateDTO
     {
         [Required]
-        public required string Name { get; set; }
+        public required string KeycloakId { get; set; }
         
         [Required]
-        public DateTime Created { get; set; }
+        public required string Name { get; set; }
+        
     }
 }

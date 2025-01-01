@@ -24,17 +24,41 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    options.Authority = "http://hobbyhub.com:8080/realms/HobbyHub/"; // Keycloak realm URL
-    options.Audience = "frontend-app"; // Replace with your Keycloak client ID
-    options.RequireHttpsMetadata = false; // Disable in development if using HTTP
+    Console.WriteLine($"Keycloak {builder.Configuration.GetSection("Keycloak")}");
+    
+    var keycloakConfig = builder.Configuration.GetSection("Keycloak");
+    options.Authority = keycloakConfig["Authority"]; // Keycloak realm URL
+    options.Audience = keycloakConfig["Audience"];   // Client ID
+    options.RequireHttpsMetadata = false;            // Disable for development
     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        ValidIssuer = "http://hobbyhub.com:8080/realms/HobbyHub/",
-        ValidAudience = "frontend-app"
+        ValidIssuer = keycloakConfig["Authority"],
+        ValidAudience = keycloakConfig["Audience"]
+    }; 
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine("Token validated successfully");
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            Console.WriteLine("Token challenge triggered");
+            return Task.CompletedTask;
+        }
     };
+    
+    Console.WriteLine($"Authority {keycloakConfig["Authority"]}");
+    Console.WriteLine($"Authority {keycloakConfig["Audience"]}");
 });
 
 builder.Services.AddAuthorization();
@@ -53,9 +77,11 @@ if (builder.Environment.IsProduction())
 }
 else
 {
-    Console.WriteLine("---> Using InMemory database");
-    builder.Services.AddDbContext<AppDbContext>(opt => 
-        opt.UseInMemoryDatabase("InMem")); 
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgressConn")));
+    // Console.WriteLine("---> Using InMemory database");
+    // builder.Services.AddDbContext<AppDbContext>(opt => 
+    //     opt.UseInMemoryDatabase("InMem")); 
 }
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();
@@ -63,6 +89,7 @@ builder.Services.AddHttpClient<IHobbyDataClient, HttpHobbyDataClient>();
 builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
 builder.Services.AddGrpc();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 
 Console.WriteLine($"--> HobbyService Endpoint {builder.Configuration["HobbyService"]}");
 
@@ -76,6 +103,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseRouting();
 
@@ -98,6 +126,10 @@ app.MapGet("/protos/users.proto", async context =>
 
 PrepDb.PrepPopulations(app, builder.Environment.IsProduction());
 app.MapGrpcService<GrpcUserService>();
+var messageBusClient = app.Services.GetRequiredService<IMessageBusClient>();
+((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.SUCCESS.#");
+// ((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.ERROR.#");
+
 app.Run();
 
 

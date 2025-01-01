@@ -9,5 +9,10 @@ namespace UserService.Data
         IEnumerable<User> GetAllUsers();
         User GetUserById(int id);
         void CreateUser(User user);
+        
+        void UpdateUser(User user); // Optional, depending on EF Core usage
+        void DeleteUser(User user);
+        
+        Task DeleteUserFromKeycloakAsync(User user);
     }
 }

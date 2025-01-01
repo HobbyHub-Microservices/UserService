@@ -5,9 +5,13 @@ namespace UserService.Models
 {
     public class User
     {
-        [Key] //For EntityFramework
+        [Key] 
         [Required]
         public int Id { get; set; }
+        
+        [Required]
+        public required string  KeycloakId { get; set; }
+        
 
         [Required]
         public required string  Name { get; set; }
