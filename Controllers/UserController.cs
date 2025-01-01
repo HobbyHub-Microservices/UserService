@@ -146,19 +146,33 @@ namespace UserService.Controllers
                 {
                     // Send the request
                     var message = await client.SendAsync(httprequest);
-
+                    
                     if (message.IsSuccessStatusCode)
                     {
-                        Console.WriteLine("User deleted successfully.");
+                        var userReadDto = _mapper.Map<UserReadDTO>(userFromRepo);
+                        var userQueryDto = _mapper.Map<UserQueryPublishedDto>(userReadDto);
+                        var userCommandDto = _mapper.Map<UserCommandPublishedDto>(userReadDto);
+                        userQueryDto.Event = "User_Deleted";
+                        userCommandDto.Event = "User_Deleted";
+                        
                         _repository.DeleteUser(userFromRepo);
                         _repository.SaveChanges();
-
+                        Console.WriteLine("User deleted successfully.");
+                        //After we will send a message to the post service so it will remove all the posts made by that users.
+                        try
+                        {
+                            //publish to the post query service
+                            _messageBusClient.PublishQueryUserDeletion(userQueryDto, "user.query.topic", "user.topic.delete");
+                            _messageBusClient.PublishCommandUserDeletion(userCommandDto, "user.command.topic", "user.topic.delete");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"--> Could not send async: {ex.Message}");
+                        }
                         return Ok();
                     }
-                    else
-                    {
-                        Console.WriteLine($"Error: {message.StatusCode}, {await message.Content.ReadAsStringAsync()}");
-                    }
+
+                    Console.WriteLine($"Error: {message.StatusCode}, {await message.Content.ReadAsStringAsync()}");
                 }
                 catch (Exception ex)
                 {
@@ -222,16 +236,16 @@ namespace UserService.Controllers
 
             
             //Send Async Message
-            try
-            {
-                var userPublishedDto = _mapper.Map<UserPublishedDTO>(UserReadDTO);
-                userPublishedDto.Event = "User_Published";
-                _messageBusClient.PublishNewUser(userPublishedDto);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"--> Could not send async: {ex.Message}");
-            }
+            // try
+            // {
+            //     var userPublishedDto = _mapper.Map<UserQueryPublishedDto>(UserReadDTO);
+            //     userPublishedDto.Event = "User_Published";
+            //     _messageBusClient.PublishUser(userPublishedDto, "user.topic", "user.add");
+            // }
+            // catch (Exception ex)
+            // {
+            //     Console.WriteLine($"--> Could not send async: {ex.Message}");
+            // }
 
             return CreatedAtRoute(nameof(GetUserById), new {Id = UserReadDTO.Id}, UserReadDTO);
         }

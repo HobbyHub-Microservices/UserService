@@ -12,11 +12,13 @@ namespace UserService.Profiles
             // Source -> Target
             CreateMap<User, UserReadDTO>();
             CreateMap<UserCreateDTO, User>();
-            CreateMap<UserReadDTO, UserPublishedDTO>();
+            CreateMap<UserReadDTO, UserQueryPublishedDto>();
             CreateMap<User, GrpcUserModel>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.Created, opt => opt.MapFrom(src => Timestamp.FromDateTime(src.Created.ToUniversalTime())));
+            
+            CreateMap<UserReadDTO, UserCommandPublishedDto>();
         }
     }
 }

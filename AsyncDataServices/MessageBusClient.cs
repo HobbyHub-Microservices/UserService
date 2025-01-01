@@ -30,6 +30,8 @@ public class MessageBusClient : IMessageBusClient
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
             _channel.ExchangeDeclare(exchange: "user.topic", type: ExchangeType.Topic, durable: false);
+            _channel.ExchangeDeclare(exchange: "user.command.topic", type: ExchangeType.Topic, durable: true);
+            _channel.ExchangeDeclare(exchange: "user.query.topic", type: ExchangeType.Topic, durable: true);
             _channel.ExchangeDeclare(exchange: "amq.topic", type: ExchangeType.Topic, durable: true);
            
             
@@ -42,31 +44,50 @@ public class MessageBusClient : IMessageBusClient
             Console.WriteLine($"--> Could not connect to message bus: {exception.Message}");
         }
     }
-    public void PublishNewUser(UserPublishedDTO userPublishedDto)
+    public void PublishQueryUserDeletion(UserQueryPublishedDto userQueryPublishedDto, string exchange, string routingKey)
     {
-        var message = JsonSerializer.Serialize(userPublishedDto);
+        var message = JsonSerializer.Serialize(userQueryPublishedDto);
 
         if (_connection.IsOpen)
         {
             Console.WriteLine($"--> Sending message to RabbitMQ: {message}");
-            SendMessage(message);
+            SendMessage(message, exchange, routingKey);
         }
         else
         {
             Console.WriteLine($"--> RabbitMQ is closed, not able to send message");
         }
     }
+    
+    public void PublishCommandUserDeletion(UserCommandPublishedDto userQueryPublishedDto, string exchange, string routingKey)
+    {
+        var message = JsonSerializer.Serialize(userQueryPublishedDto);
 
-    private void SendMessage(string message)
+        if (_connection.IsOpen)
+        {
+            Console.WriteLine($"--> Sending message to RabbitMQ: {message}");
+            SendMessage(message, exchange, routingKey);
+        }
+        else
+        {
+            Console.WriteLine($"--> RabbitMQ is closed, not able to send message");
+        }
+    }
+    
+   
+
+    private void SendMessage(string message, string exchange, string routingKey)
     {
         var body = Encoding.UTF8.GetBytes(message);
         _channel.BasicPublish(
-            exchange: "user.topic",
-            routingKey: "user.add",
+            exchange: exchange,
+            routingKey: routingKey,
             basicProperties: null,
             body: Encoding.UTF8.GetBytes(message));
         Console.WriteLine($"--> Sent message to RabbitMQ: {message}");
     }
+    
+    
     
     public void StartListening(string routingKey)
     {
