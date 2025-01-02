@@ -89,7 +89,15 @@ builder.Services.AddHttpClient<IHobbyDataClient, HttpHobbyDataClient>();
 builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
 builder.Services.AddGrpc();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
 
 Console.WriteLine($"--> HobbyService Endpoint {builder.Configuration["HobbyService"]}");
 
@@ -123,6 +131,8 @@ app.MapGet("/protos/users.proto", async context =>
 {
     await context.Response.WriteAsync(File.ReadAllText("Protos/users.proto"));
 });
+
+app.UseCors("AllowAllOrigins");
 
 PrepDb.PrepPopulations(app, builder.Environment.IsProduction());
 app.MapGrpcService<GrpcUserService>();

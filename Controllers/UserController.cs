@@ -212,6 +212,19 @@ namespace UserService.Controllers
             }
             return NotFound();
         }
+        
+        [AllowAnonymous]
+        [HttpGet("keycloak/{keyCloakId}", Name = "GetKeycloakUserById")]
+        public ActionResult<UserReadDTO> GetKeycloakUserById(string keyCloakId)
+        {
+            var userItem = _repository.GetUserByKeycloakId(keyCloakId);
+            if(userItem != null)
+            {
+                return Ok(_mapper.Map<UserReadDTO>(userItem));
+            
+            }
+            return NotFound();
+        }
 
         [AllowAnonymous]
         [HttpPost]

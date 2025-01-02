@@ -11,6 +11,17 @@ namespace UserService.Data
             _context = context;
         }
 
+        public User GetUserByKeycloakId(string Keycloakid)
+        {
+            var user = _context.Users.FirstOrDefault(p => p.KeycloakId == Keycloakid);
+            if (user == null)
+            {
+                throw new InvalidOperationException($"User with Keycloakid {Keycloakid} was not found.");
+            }
+    
+            return user;
+        }
+
         public void CreateUser(User user)
         {
             if(user == null)

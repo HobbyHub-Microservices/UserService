@@ -8,6 +8,8 @@ namespace UserService.Data
 
         IEnumerable<User> GetAllUsers();
         User GetUserById(int id);
+
+        User GetUserByKeycloakId(string Keycloakid);
         void CreateUser(User user);
         
         void UpdateUser(User user); // Optional, depending on EF Core usage
