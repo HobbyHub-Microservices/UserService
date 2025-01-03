@@ -187,6 +187,24 @@ namespace UserService.Controllers
             // Delete user from your database
             return NoContent();
         }
+        
+        [AllowAnonymous]
+        [HttpDelete("delete-account")]
+        public async Task<ActionResult> DeleteUserByKeycloak(string keycloakId)
+        {
+            var clientId = _configuration["Keycloak:ClientId"];
+            var clientSecret = _configuration["Keycloak:ClientSecret"];
+            var authority = _configuration["Keycloak:Authority"];
+
+            var userFromRepo = _repository.GetUserByKeycloakId(keycloakId);
+            if (userFromRepo == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            await DeleteUser(userFromRepo.Id);
+            return Ok();
+        }
     
         
         [AllowAnonymous]
