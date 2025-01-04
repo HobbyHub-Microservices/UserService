@@ -18,6 +18,41 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+if (builder.Environment.IsProduction())
+{
+    //--> This is the old code that uses the MSSQL database:
+    // var connectionString =  builder.Configuration.GetConnectionString("UserConn");;
+    // var dbPassword = builder.Configuration["ConnectionStrings:UserConn:Password"];
+    //
+    // Console.WriteLine("--> Setting SQL connection string");
+    // builder.Configuration["ConnectionStrings:UserConn"] = $"{connectionString};Password={dbPassword}";
+    //
+    // Console.WriteLine("---> Using SqlServer database");
+    // builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("UserConn")));
+    
+    var connectionString =  builder.Configuration.GetConnectionString("PostgressConn");;
+    var dbPassword = builder.Configuration["ConnectionStrings:UserConn:Password"]; //Set inside Kubernetes
+    builder.Configuration["ConnectionStrings:PostgressConn"] = $"{connectionString};Password={dbPassword}";
+    Console.WriteLine("---> Connecting to database");
+    
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgressConn")));
+    
+    // Read Keycloak values from environment variables
+    builder.Configuration["Keycloak:ClientId"] = Environment.GetEnvironmentVariable("KEYCLOAK_CLIENTID");
+    builder.Configuration["Keycloak:ClientSecret"] = Environment.GetEnvironmentVariable("KEYCLOAK_CLIENTSECRET");
+    builder.Configuration["Keycloak:Authority"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHORITY");
+    builder.Configuration["Keycloak:Audience"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUDIENCE");
+    
+}
+else
+{
+
+    Console.WriteLine("---> Using InMemory database");
+    builder.Services.AddDbContext<AppDbContext>(opt => 
+        opt.UseInMemoryDatabase("InMem")); 
+}
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -64,25 +99,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 
-if (builder.Environment.IsProduction())
-{
-    var connectionString =  builder.Configuration.GetConnectionString("UserConn");;
-    var dbPassword = builder.Configuration["ConnectionStrings:UserConn:Password"];
-    
-    Console.WriteLine("--> Setting SQL connection string");
-    builder.Configuration["ConnectionStrings:UserConn"] = $"{connectionString};Password={dbPassword}";
-    
-    Console.WriteLine("---> Using SqlServer database");
-    builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("UserConn")));
-}
-else
-{
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgressConn")));
-    // Console.WriteLine("---> Using InMemory database");
-    // builder.Services.AddDbContext<AppDbContext>(opt => 
-    //     opt.UseInMemoryDatabase("InMem")); 
-}
+
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddHttpClient<IHobbyDataClient, HttpHobbyDataClient>();
