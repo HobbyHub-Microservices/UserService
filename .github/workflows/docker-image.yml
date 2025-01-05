@@ -1,29 +1,39 @@
-name: OWASP ZAP Scan
+name: Docker Image CI
 
 on:
-  workflow_run:
-    workflows: ["Docker Image CI"] # Triggers after the Docker Image CI workflow
-    types:
-      - completed
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
-  zap_scan:
+
+  build-and-push:
+
     runs-on: ubuntu-latest
-    name: Scan the webapplication
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: master
+    # Step 1: Check out the repository
+    - uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+    # Step 2: Log in to Docker Hub
+    - name: Log in to Docker Hub
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USER" --password-stdin
 
-      - name: ZAP Scan
-        uses: zaproxy/action-baseline@v0.14.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          docker_name: '${{ secrets.DOCKER_USER }}/userservice:latest'
-          target: 'https://www.zaproxy.org'
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
+    # Step 3: Build the Docker image
+    - name: Build the Docker image
+      run: |
+        REPO_NAME=$(basename "${{ github.repository }}" | tr '[:upper:]' '[:lower:]') # Convert to lowercase
+        IMAGE_NAME=${{ secrets.DOCKER_USER }}/$REPO_NAME
+        TAG=latest
+        docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
+        echo "IMAGE_NAME=$IMAGE_NAME:$TAG" >> $GITHUB_ENV
+        
+    # Step 4: Push the Docker image
+    - name: Push the Docker image to Docker Hub
+      run: |
+        IMAGE_NAME=${{ env.IMAGE_NAME }}
+        docker push $IMAGE_NAME
