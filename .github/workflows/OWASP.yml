@@ -19,11 +19,27 @@ jobs:
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
+      - name: Start .NET Application in Development Mode
+        run: |
+          docker pull ${{ secrets.DOCKER_USER }}/userservice:latest
+          docker run -d --rm \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            -p 5000:5000 \
+            --name userservice \
+            ${{ secrets.DOCKER_USER }}/userservice:latest
+
+      - name: Verify Application Is Running
+        run: |
+          curl http://localhost:5000 || (echo "Application not running!" && exit 1)
+
       - name: ZAP Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          docker_name: '${{ secrets.DOCKER_USER }}/userservice:latest'
-          target: 'https://www.zaproxy.org'
+          target: 'http://localhost:5000' # Point ZAP to the local application
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
+
+      - name: Clean Up
+        if: always()
+        run: docker stop userservice
