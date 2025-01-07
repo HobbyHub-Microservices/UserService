@@ -84,7 +84,7 @@ if (builder.Environment.IsProduction())
         Console.WriteLine($"Host={dbHost};Port={dbPort};Database=Users;Username={dbUser}Password={dbPassword};Trust Server Certificate=true;");
         
     }
-    builder.Configuration["ConnectionStrings:PostgressConn"] = $"Host={dbHost};Port={dbPort};Database=Users;Username={dbUser}Password={dbPassword};Trust Server Certificate=true;";
+    builder.Configuration["ConnectionStrings:PostgressConn"] = $"Host={dbHost};Port={dbPort};Database=Users;Username={dbUser};Password={dbPassword};Trust Server Certificate=true;";
     
 
     Console.WriteLine("---> Trying to connect to database");
