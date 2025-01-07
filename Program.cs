@@ -122,6 +122,8 @@ builder.Services.AddAuthentication(options =>
     Console.WriteLine($"Keycloak {builder.Configuration.GetSection("Keycloak")}");
     
     var keycloakConfig = builder.Configuration.GetSection("Keycloak");
+    
+    Console.WriteLine($"keycloak config: {keycloakConfig}");
     options.Authority = keycloakConfig["Authority"]; // Keycloak realm URL
     options.Audience = keycloakConfig["Audience"];   // Client ID
     options.RequireHttpsMetadata = false;            // Disable for development
