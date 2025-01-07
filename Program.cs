@@ -97,6 +97,14 @@ if (builder.Environment.IsProduction())
     builder.Configuration["Keycloak:Authority"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHORITY");
     builder.Configuration["Keycloak:Audience"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUDIENCE");
     builder.Configuration["Keycloak:AuthenticationURL"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHENTICATION_URL");
+    
+    Console.WriteLine("Keycloak Configuration:");
+    Console.WriteLine($"ClientId: {builder.Configuration["Keycloak:ClientId"]}");
+    Console.WriteLine($"ClientSecret: {builder.Configuration["Keycloak:ClientSecret"]}"); // Be cautious with sensitive info
+    Console.WriteLine($"Authority: {builder.Configuration["Keycloak:Authority"]}");
+    Console.WriteLine($"Audience: {builder.Configuration["Keycloak:Audience"]}");
+    Console.WriteLine($"AuthenticationURL: {builder.Configuration["Keycloak:AuthenticationURL"]}");
+    
 }
 else
 {
