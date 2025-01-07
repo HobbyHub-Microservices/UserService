@@ -94,6 +94,7 @@ if (builder.Environment.IsProduction())
     // Read Keycloak values from environment variables
     builder.Configuration["Keycloak:ClientId"] = Environment.GetEnvironmentVariable("KEYCLOAK_CLIENTID");
     builder.Configuration["Keycloak:ClientSecret"] = Environment.GetEnvironmentVariable("KEYCLOAK_CLIENTSECRET");
+   
     builder.Configuration["Keycloak:Authority"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHORITY");
     builder.Configuration["Keycloak:Audience"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUDIENCE");
     builder.Configuration["Keycloak:AuthenticationURL"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHENTICATION_URL");
@@ -119,21 +120,17 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-    Console.WriteLine($"Keycloak {builder.Configuration.GetSection("Keycloak")}");
-    
-    var keycloakConfig = builder.Configuration.GetSection("Keycloak");
-    
-    Console.WriteLine($"keycloak config: {keycloakConfig}");
-    options.Authority = keycloakConfig["Authority"]; // Keycloak realm URL
-    options.Audience = keycloakConfig["Audience"];   // Client ID
+
+    options.Authority = builder.Configuration["Keycloak:Authority"]; // Keycloak realm URL
+    options.Audience = builder.Configuration["Keycloak:Audience"];   // Client ID
     options.RequireHttpsMetadata = false;            // Disable for development
     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        ValidIssuer = keycloakConfig["Authority"],
-        ValidAudience = keycloakConfig["Audience"]
+        ValidIssuer = builder.Configuration["Keycloak:Authority"],
+        ValidAudience = builder.Configuration["Keycloak:Audience"]
     }; 
     options.Events = new JwtBearerEvents
     {
@@ -154,8 +151,6 @@ builder.Services.AddAuthentication(options =>
         }
     };
     
-    Console.WriteLine($"Authority {keycloakConfig["Authority"]}");
-    Console.WriteLine($"Authority {keycloakConfig["Audience"]}");
 });
 
 builder.Services.AddAuthorization();
