@@ -72,8 +72,8 @@ if (builder.Environment.IsProduction())
 
     //Set inside Kubernetes
     var dbUser = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:User");
-    var dbHost = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:Host");
-    var dbPort = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:Port");
+    var dbHost = Environment.GetEnvironmentVariable("POSTGRES_HOST");
+    var dbPort = Environment.GetEnvironmentVariable("POSTGRES_PORT");
     var dbPassword = builder.Configuration["ConnectionStrings:Postgres:Password"];
 
     if (string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbHost) || string.IsNullOrEmpty(dbPort) ||
