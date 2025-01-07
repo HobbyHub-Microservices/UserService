@@ -26,11 +26,12 @@ jobs:
     # Step 3: Build the Docker image
     - name: Build the Docker image
       run: |
-        IMAGE_NAME=${{ secrets.DOCKER_USER }}/userservice
+        REPO_NAME=$(basename "${{ github.repository }}" | tr '[:upper:]' '[:lower:]') # Convert to lowercase
+        IMAGE_NAME=${{ secrets.DOCKER_USER }}/$REPO_NAME
         TAG=latest
         docker build . --file Dockerfile --tag $IMAGE_NAME:$TAG
         echo "IMAGE_NAME=$IMAGE_NAME:$TAG" >> $GITHUB_ENV
-
+        
     # Step 4: Push the Docker image
     - name: Push the Docker image to Docker Hub
       run: |
