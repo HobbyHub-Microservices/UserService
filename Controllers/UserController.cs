@@ -39,6 +39,7 @@ namespace UserService.Controllers
             _configuration = configuration;
         }
         
+        [Authorize]
         [HttpGet("profile")]
         public IActionResult GetProfile()
         {
@@ -48,6 +49,7 @@ namespace UserService.Controllers
                 Claims = User.Claims.Select(c => new { c.Type, c.Value })
             });
         }
+        
         [AllowAnonymous]
         [HttpPut("{id}")]
         public ActionResult UpdateUser(int id, UserUpdateDTO userUpdateDTO)
@@ -218,7 +220,7 @@ namespace UserService.Controllers
             return Ok(_mapper.Map<IEnumerable<UserReadDTO>>(userItem));
         }
 
-        [AllowAnonymous]
+        
         [HttpGet("{id}", Name = "GetUserById")]
         public ActionResult<UserReadDTO> GetUserById(int id)
         {

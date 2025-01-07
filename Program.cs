@@ -3,6 +3,7 @@ using UserService.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 using Prometheus;
 using UserService.AsyncDataServices;
 using UserService.SyncDataServices.Grpc;
@@ -16,7 +17,45 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(o =>
+{
+//     o.CustomSchemaIds(id => id.FullName!.Replace("+", "-"));
+//     o.AddSecurityDefinition("Keycloak", new OpenApiSecurityScheme
+//     {
+//         Type = SecuritySchemeType.OAuth2,
+//         Flows = new OpenApiOAuthFlows
+//         {
+//             Implicit = new OpenApiOAuthFlow
+//             {
+//                 AuthorizationUrl = new Uri(builder.Configuration.GetConnectionString("Keycloak:AuthenticationURL")!),
+//                 Scopes = new Dictionary<string, string>
+//                 {
+//                     {"openid", "openid"},
+//                     {"profile", "profile"}
+//                 }
+//             }
+//         }
+//     });
+//     var securityRequirement = new OpenApiSecurityRequirement
+//     {
+//         {
+//             new OpenApiSecurityScheme
+//             {
+//                 Reference = new OpenApiReference
+//                 {
+//                     Id = "Keycloak",
+//                     Type = ReferenceType.SecurityScheme
+//                 },
+//                 In = ParameterLocation.Header,
+//                 Name = "Bearer",
+//                 Scheme = "Bearer",
+//             },
+//             []
+//         }
+//     };
+//     o.AddSecurityRequirement(securityRequirement);
+});
 
 if (builder.Environment.IsProduction())
 {
@@ -29,12 +68,26 @@ if (builder.Environment.IsProduction())
     //
     // Console.WriteLine("---> Using SqlServer database");
     // builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("UserConn")));
+
+
+    //Set inside Kubernetes
+    var dbUser = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:User");
+    var dbHost = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:Host");
+    var dbPort = builder.Configuration.GetConnectionString("ConnectionStrings:Postgres:Port");
+    var dbPassword = builder.Configuration["ConnectionStrings:Postgres:Password"];
+
+    if (string.IsNullOrEmpty(dbUser) || string.IsNullOrEmpty(dbHost) || string.IsNullOrEmpty(dbPort) ||
+        string.IsNullOrEmpty(dbPassword))
+    {
+        
+        Console.WriteLine("One of the string values for Postgres are empty");
+        Console.WriteLine($"Host={dbHost};Port={dbPort};Database=Users;Username={dbUser}Password={dbPassword};Trust Server Certificate=true;");
+        
+    }
+    builder.Configuration["ConnectionStrings:PostgressConn"] = $"Host={dbHost};Port={dbPort};Database=Users;Username={dbUser}Password={dbPassword};Trust Server Certificate=true;";
     
-    var connectionString =  builder.Configuration.GetConnectionString("PostgressConn");;
-    var dbPassword = builder.Configuration["ConnectionStrings:UserConn:Password"]; //Set inside Kubernetes
-    builder.Configuration["ConnectionStrings:PostgressConn"] = $"{connectionString};Password={dbPassword}";
-    Console.WriteLine("---> Connecting to database");
-    
+
+    Console.WriteLine("---> Trying to connect to database");
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("PostgressConn")));
     
@@ -43,7 +96,7 @@ if (builder.Environment.IsProduction())
     builder.Configuration["Keycloak:ClientSecret"] = Environment.GetEnvironmentVariable("KEYCLOAK_CLIENTSECRET");
     builder.Configuration["Keycloak:Authority"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHORITY");
     builder.Configuration["Keycloak:Audience"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUDIENCE");
-    
+    builder.Configuration["Keycloak:AuthenticationURL"] = Environment.GetEnvironmentVariable("KEYCLOAK_AUTHENTICATION_URL");
 }
 else
 {
