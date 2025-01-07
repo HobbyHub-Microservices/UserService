@@ -50,7 +50,7 @@ namespace UserService.Controllers
             });
         }
         
-        [AllowAnonymous]
+        [Authorize]
         [HttpPut("{id}")]
         public ActionResult UpdateUser(int id, UserUpdateDTO userUpdateDTO)
         {
@@ -71,7 +71,7 @@ namespace UserService.Controllers
             return NoContent(); // HTTP 204 indicates a successful update with no content to return
         }
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteUser(int id)
         {
@@ -190,7 +190,7 @@ namespace UserService.Controllers
             return NoContent();
         }
         
-        [AllowAnonymous]
+        [Authorize]
         [HttpDelete("delete-account")]
         public async Task<ActionResult> DeleteUserByKeycloak(string keycloakId)
         {
@@ -209,7 +209,7 @@ namespace UserService.Controllers
         }
     
         
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet]
         public ActionResult<IEnumerable<UserReadDTO>> GetUsers()
         {
@@ -233,7 +233,7 @@ namespace UserService.Controllers
             return NotFound();
         }
         
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet("keycloak/{keyCloakId}", Name = "GetKeycloakUserById")]
         public ActionResult<UserReadDTO> GetKeycloakUserById(string keyCloakId)
         {
@@ -246,7 +246,7 @@ namespace UserService.Controllers
             return NotFound();
         }
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<UserReadDTO>> CreateUser(UserCreateDTO userCreateDTO)
         {
@@ -284,7 +284,7 @@ namespace UserService.Controllers
         }
         
         [HttpGet("public")]
-        [AllowAnonymous]
+        [Authorize]
         public IActionResult GetPublicInfo()
         {
             return Ok(new { Message = "This is a public endpoint!" });
