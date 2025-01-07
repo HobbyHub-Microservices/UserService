@@ -120,17 +120,22 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-
+    Console.WriteLine("---> Using Keycloak stuff");
+    Console.WriteLine(builder.Configuration["Keycloak:Authority"]);
+    Console.WriteLine(builder.Configuration["Keycloak:Audience"]);
+    
     options.Authority = builder.Configuration["Keycloak:Authority"]; // Keycloak realm URL
     options.Audience = builder.Configuration["Keycloak:Audience"];   // Client ID
     options.RequireHttpsMetadata = false;            // Disable for development
+    
     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
         ValidIssuer = builder.Configuration["Keycloak:Authority"],
-        ValidAudience = builder.Configuration["Keycloak:Audience"]
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Keycloak:Audience"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true
     }; 
     options.Events = new JwtBearerEvents
     {
@@ -146,7 +151,7 @@ builder.Services.AddAuthentication(options =>
         },
         OnChallenge = context =>
         {
-            Console.WriteLine("Token challenge triggered");
+            Console.WriteLine($"Token challenge triggered: {context.Error}, {context.ErrorDescription}");
             return Task.CompletedTask;
         }
     };
@@ -154,10 +159,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
-
-
-
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddHttpClient<IHobbyDataClient, HttpHobbyDataClient>();
 builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>();
@@ -212,7 +213,7 @@ PrepDb.PrepPopulations(app, builder.Environment.IsProduction());
 app.MapGrpcService<GrpcUserService>();
 var messageBusClient = app.Services.GetRequiredService<IMessageBusClient>();
 ((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.SUCCESS.#");
-// ((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.ERROR.#");
+((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.ERROR.#");
 
 app.Run();
 
