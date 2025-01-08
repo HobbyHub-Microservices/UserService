@@ -106,7 +106,7 @@ namespace UserService.Controllers
                 var request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
-                    RequestUri = new Uri("http://hobbyhub.com:8080/realms/master/protocol/openid-connect/token"),
+                    RequestUri = new Uri("https://keycloak-hobbyhub.australiacentral.cloudapp.azure.com/realms/master/protocol/openid-connect/token"),
                     Content = content
                 };
                 
@@ -137,7 +137,7 @@ namespace UserService.Controllers
                     Method = HttpMethod.Delete,
                     RequestUri =
                         new Uri(
-                            "http://hobbyhub.com:8080/admin/realms/HobbyHub/users/" + userFromRepo.KeycloakId),
+                            "https://keycloak-hobbyhub.australiacentral.cloudapp.azure.com/admin/realms/HobbyHub/users/" + userFromRepo.KeycloakId),
                 };
 
                 // Set Authorization header
