@@ -99,7 +99,7 @@ namespace UserService.Controllers
                     { "client_id", "admin-cli" },
                     { "username", "admin" },
                     { "password", "admin" },
-                    { "client_secret", "jLGWqa9rna565mxfkDNd3T5dGcUPKlU8" }
+                    { "client_secret", "FEYM3biU4v6gpBgQIApYKrW6fPugKgqC" }
                 });
 
 
