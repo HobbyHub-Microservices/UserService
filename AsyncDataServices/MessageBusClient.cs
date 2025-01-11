@@ -22,10 +22,15 @@ public class MessageBusClient : IMessageBusClient
         _config = config;
         Console.WriteLine($"RabbitMQHost = {_config["RabbitMQHost"]}");
         Console.WriteLine($"RabbitMQPort = {_config["RabbitMQPort"]}");
+        Console.WriteLine($"RabbitMQUsername = {_config["RabbitMQUsername"]}");
+        Console.WriteLine($"RabbitMQPassword = {_config["RabbitMQPassword"]}");
+        
         var factory = new ConnectionFactory(){ 
             HostName = _config["RabbitMQHost"], 
             Port = int.Parse(_config["RabbitMQPort"] ?? string.Empty),
-            ClientProvidedName = "UserService"
+            ClientProvidedName = "UserService",
+            UserName = _config["RabbitMQUsername"],
+            Password = _config["RabbitMQPassword"]
         }; //this needs to be the same as the appsettings.json file settings
         try
         {
