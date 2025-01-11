@@ -20,6 +20,8 @@ public class MessageBusClient : IMessageBusClient
     {
         _services = services;
         _config = config;
+        Console.WriteLine($"RabbitMQHost = {_config["RabbitMQHost"]}");
+        Console.WriteLine($"RabbitMQPort = {_config["RabbitMQPort"]}");
         var factory = new ConnectionFactory(){ 
             HostName = _config["RabbitMQHost"], 
             Port = int.Parse(_config["RabbitMQPort"] ?? string.Empty),
