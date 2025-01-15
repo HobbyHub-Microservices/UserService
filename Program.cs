@@ -213,9 +213,9 @@ app.UseCors("AllowAllOrigins");
 
 PrepDb.PrepPopulations(app, builder.Environment.IsProduction());
 app.MapGrpcService<GrpcUserService>();
-var messageBusClient = app.Services.GetRequiredService<IMessageBusClient>();
-((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.SUCCESS.#");
-((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.ERROR.#");
+// var messageBusClient = app.Services.GetRequiredService<IMessageBusClient>();
+// ((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.SUCCESS.#");
+// ((MessageBusClient)messageBusClient).StartListening("KK.EVENT.*.HobbyHub.ERROR.#");
 
 app.Run();
 
