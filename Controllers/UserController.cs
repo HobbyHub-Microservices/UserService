@@ -22,7 +22,8 @@ namespace UserService.Controllers
         private readonly IHobbyDataClient _hobbyDataClient;
         private readonly IMessageBusClient _messageBusClient;
         private readonly IConfiguration _configuration;
-
+        private readonly bool IntegrationMode;
+        
         public UsersController(
             IUserRepo repository, 
             IMapper mapper,
@@ -37,7 +38,29 @@ namespace UserService.Controllers
             _hobbyDataClient = hobbyDataClient;
             _messageBusClient = messageBusClient;
             _configuration = configuration;
+            IntegrationMode = _configuration.GetValue<bool>("IntegrationMode");
         }
+
+        
+        private bool IsValidJwt()
+        {
+            
+            var expectedJwt = _configuration.GetValue<string>("JWT");
+            
+                // Extract JWT from headers
+                var authorizationHeader = HttpContext.Request.Headers["Authorization"].ToString();
+                if (authorizationHeader.StartsWith("Bearer "))
+                {
+                    Console.WriteLine("INTEGRATION MODE: CHECKED -> STARTS WITH BEARER");
+                    var jwt = authorizationHeader.Substring("Bearer ".Length).Trim();
+                    Console.WriteLine("INTEGRATION MODE: CHECKED -> JWT TOKEN");
+                    return jwt == expectedJwt; // Validate JWT value
+                }
+
+                return false; // No valid JWT provided
+                
+        }
+
         
         [Authorize]
         [HttpGet("profile")]
@@ -224,6 +247,22 @@ namespace UserService.Controllers
         [HttpGet("{id}", Name = "GetUserById")]
         public ActionResult<UserReadDTO> GetUserById(int id)
         {
+            if (IntegrationMode)
+            {
+                Console.WriteLine("INTEGRATION MODE: GETTING ENDPOINT IN INTEGRATION MODE");
+                if (!IsValidJwt())
+                {
+                    Console.WriteLine("INTEGRATION MODE: NOT VALID JWT");
+                    return Unauthorized();
+                }
+                    var jUser = _repository.GetUserById(id);
+                    if(jUser != null)
+                    {
+                        return Ok(_mapper.Map<UserReadDTO>(jUser));
+            
+                    }
+            }
+
             var userItem = _repository.GetUserById(id);
             if(userItem != null)
             {
@@ -237,6 +276,8 @@ namespace UserService.Controllers
         [HttpGet("keycloak/{keyCloakId}", Name = "GetKeycloakUserById")]
         public ActionResult<UserReadDTO> GetKeycloakUserById(string keyCloakId)
         {
+            
+
             var userItem = _repository.GetUserByKeycloakId(keyCloakId);
             if(userItem != null)
             {
