@@ -159,25 +159,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 var integrationMode = builder.Configuration.GetValue<bool>("IntegrationMode");
-builder.Services.AddAuthorization(options =>
-{
-    if (integrationMode)
-    {
-        Console.WriteLine("Running in Integration Mode");
-        // Set default policy to allow anonymous access
-        options.DefaultPolicy = new AuthorizationPolicyBuilder()
-            .RequireAssertion(_ => true)
-            .Build();
-    }
-    else
-    {
-        Console.WriteLine("Running in Production Mode");
-        // Set default policy to require authentication
-        options.DefaultPolicy = new AuthorizationPolicyBuilder()
-            .RequireAuthenticatedUser()
-            .Build();
-    }
-});
+builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddHttpClient<IHobbyDataClient, HttpHobbyDataClient>();
