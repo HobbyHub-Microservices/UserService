@@ -294,7 +294,7 @@ namespace UserService.Controllers
             return NotFound();
         }
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<UserReadDTO>> CreateUser(UserCreateDTO userCreateDTO)
         {
