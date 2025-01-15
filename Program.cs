@@ -114,7 +114,10 @@ else
         opt.UseInMemoryDatabase("InMem")); 
 }
 
-builder.Services.AddAuthentication(options =>
+var integrationMode = builder.Configuration.GetValue<bool>("IntegrationMode");
+if (!integrationMode)
+{
+   builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -156,9 +159,12 @@ builder.Services.AddAuthentication(options =>
         }
     };
     
-});
+}); 
+}
 
-var integrationMode = builder.Configuration.GetValue<bool>("IntegrationMode");
+
+
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IUserRepo, UserRepo>();

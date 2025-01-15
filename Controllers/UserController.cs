@@ -267,6 +267,7 @@ namespace UserService.Controllers
             }
                 if (!IsValidJwt())
                 {
+                    Console.WriteLine("Invalid jwt inside integration test");
                     return Unauthorized();
                 }
 
