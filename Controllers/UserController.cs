@@ -258,7 +258,7 @@ namespace UserService.Controllers
         }
         
         [AllowAnonymous]
-        [HttpGet("/test/{id}", Name = "GetUserById")]
+        [HttpGet("/test/{id}", Name = "GetTestUserById")]
         public ActionResult<UserReadDTO> GetTestUserById(int id)
         {
             if (!IntegrationMode)
