@@ -285,7 +285,6 @@ namespace UserService.Controllers
         public ActionResult<UserReadDTO> GetKeycloakUserById(string keyCloakId)
         {
             
-
             var userItem = _repository.GetUserByKeycloakId(keyCloakId);
             if(userItem != null)
             {
@@ -295,7 +294,7 @@ namespace UserService.Controllers
             return NotFound();
         }
 
-        [Authorize]
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<UserReadDTO>> CreateUser(UserCreateDTO userCreateDTO)
         {
