@@ -227,6 +227,44 @@ namespace UserService.Controllers
                 return NotFound(new { Message = "User not found" });
             }
 
+            var userReadDto = _mapper.Map<UserReadDTO>(userFromRepo);
+            var userQueryDto = _mapper.Map<UserQueryPublishedDto>(userReadDto);
+            var userCommandDto = _mapper.Map<UserCommandPublishedDto>(userReadDto);
+            await DeleteUser(userFromRepo.Id);
+            try
+            {
+                //publish to the post query service
+                _messageBusClient.PublishQueryUserDeletion(userQueryDto, "user.query.topic", "user.topic.delete");
+                _messageBusClient.PublishCommandUserDeletion(userCommandDto, "user.command.topic", "user.topic.delete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Could not send async: {ex.Message}");
+            }
+            return Ok();
+        }
+        
+        [AllowAnonymous]
+        [HttpDelete("test/delete-account")]
+        public async Task<ActionResult> DeleteUserByKeycloakTest(string keycloakId)
+        {
+            
+            if (!IntegrationMode)
+            {
+                return NotFound();
+            }
+            if (!IsValidJwt())
+            {
+                Console.WriteLine("Invalid jwt inside integration test");
+                return Unauthorized();
+            }
+        
+            var userFromRepo = _repository.GetUserByKeycloakId(keycloakId);
+            if (userFromRepo == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
             await DeleteUser(userFromRepo.Id);
             return Ok();
         }
@@ -280,6 +318,8 @@ namespace UserService.Controllers
                 return NotFound();
 
         }
+        
+        
         
         [Authorize]
         [HttpGet("keycloak/{keyCloakId}", Name = "GetKeycloakUserById")]
