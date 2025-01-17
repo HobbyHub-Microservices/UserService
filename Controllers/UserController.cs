@@ -251,6 +251,7 @@ namespace UserService.Controllers
             
             if (!IntegrationMode)
             {
+                Console.WriteLine("IntegrationMode is off");
                 return NotFound();
             }
             if (!IsValidJwt())
@@ -265,7 +266,27 @@ namespace UserService.Controllers
                 return NotFound(new { Message = "User not found" });
             }
 
-            await DeleteUser(userFromRepo.Id);
+            var userReadDto = _mapper.Map<UserReadDTO>(userFromRepo);
+            var userQueryDto = _mapper.Map<UserQueryPublishedDto>(userReadDto);
+            var userCommandDto = _mapper.Map<UserCommandPublishedDto>(userReadDto);
+            userQueryDto.Event = "User_Deleted";
+            userCommandDto.Event = "User_Deleted";
+                        
+            _repository.DeleteUser(userFromRepo);
+            _repository.SaveChanges();
+            Console.WriteLine("User deleted successfully.");
+            try
+            {
+                //publish to the post query service
+                _messageBusClient.PublishQueryUserDeletion(userQueryDto, "user.query.topic", "user.topic.delete");
+                _messageBusClient.PublishCommandUserDeletion(userCommandDto, "user.command.topic", "user.topic.delete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> Could not send async: {ex.Message}");
+            }
+            
+            
             return Ok();
         }
     
